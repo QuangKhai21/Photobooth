@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhotoBooth</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #333;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    .left, .middle, .right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+   #video, #canvas {
+  width: 640px;
+  height: 480px;
+  border: 4px solid #333;
+  border-radius: 12px;
+  background-color: #000;
+  object-fit: cover;
+}
+
+
+    .filters {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filters button {
+      padding: 10px 20px;
+      font-weight: bold;
+      background-color: white;
+      border: 2px solid #555;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 200px;
+      transition: background-color 0.3s;
+    }
+
+    .filters button:hover {
+      background-color: #d1e7ff;
+    }
+
+    .countdown {
+      font-size: 3rem;
+      font-weight: bold;
+      color: red;
+      margin-bottom: 10px;
+    }
+
+    .preview canvas {
+      width: 200px;
+      height: 150px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .start-btn {
+      margin-top: 0.5rem;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .start-btn:hover {
+      background-color: #0056b3;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #video, #canvas {
+        width: 280px;
+        height: 210px;
+      }
+
+      .filters button {
+        width: 160px;
+      }
+
+      .preview canvas {
+        width: 80px;
+        height: 60px;
+      }
+      .style{
+        margin-top: 2rem; display: flex; flex-direction: column; gap: 10px;}
+    }
+    .branding {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #007bff;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+.footer {
+  margin-top: 1rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #555;
+  background-color: #eaf4ff;
+  border-top: 2px solid #ccc;
+  border-radius: 8px;
+  max-width: 1400px;
+  width: 100%;
+}
+
+.footer a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+  </style>
+</head>
+<body>
+    <div class="branding">Quang Khải💻</div>
+  <h1>PHOTOBOOTH</h1>
+  <div class="container">
+    <!-- Bên trái: bộ lọc -->
+    <div class="left">
+      <div class="filters">
+        <button onclick="setFilter('none')">Normal</button>
+        <button onclick="setFilter('brightness(1.3)')">Brighten</button>
+        <button onclick="setFilter('hue-rotate(330deg)')">Pink</button>
+        <button onclick="setFilter('sepia(1)')">Sepia</button>
+        <button onclick="setFilter('grayscale(1)')">Black & White</button>
+        <button onclick="setFilter('')">Reset</button>
+      </div>
+
+  <button onclick="resetAll()" class="start-btn" style="background-color: #dc3545;">🔄 Chụp lại</button>
+  <button onclick="goToReview()" class="start-btn" style="background-color: #28a745;">➡️ Chỉnh sửa</button>
+
+
+      <button id="startBtn" class="start-btn" onclick="startCountdown()">📸 Bắt đầu chụp</button>
+
+      <div id="countdown" class="countdown"></div>
+    </div>
+
+    <!-- Giữa: Camera -->
+    <div class="middle">
+      <video id="video" autoplay></video>
+      <canvas id="canvas" style="display: none;"></canvas>
+    </div>
+
+    <!-- Bên phải: Preview -->
+    <div class="right preview">
+      <canvas id="preview1"></canvas>
+      <canvas id="preview2"></canvas>
+      <canvas id="preview3"></canvas>
+    </div>
+  </div>
+
+ <script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const countdownEl = document.getElementById('countdown');
+  const previews = [
+    document.getElementById('preview1'),
+    document.getElementById('preview2'),
+    document.getElementById('preview3')
+  ];
+
+  let capturedImages = [];
+  let currentFilter = 'none';
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => video.srcObject = stream)
+    .catch(err => alert("Webcam error: " + err));
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    video.style.filter = filter;
+  }
+
+  function startCountdown() {
+    if (capturedImages.length >= 3) {
+      alert("✅ Bạn đã chụp đủ 3 ảnh. Hãy Chọn 'Chỉnh sửa' để lưu hoặc 'Chụp lại' để chụp ảnh mới.");
+      return;
+    }
+
+    let count = 3;
+    countdownEl.textContent = count;
+
+    const interval = setInterval(() => {
+      count--;
+      countdownEl.textContent = count > 0 ? count : '';
+
+      if (count === 0) {
+        clearInterval(interval);
+        captureImage();
+      }
+    }, 1000);
+  }
+
+  function captureImage() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.filter = currentFilter;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataURL = canvas.toDataURL('image/png');
+    capturedImages.push(dataURL);
+
+    const previewCanvas = previews[capturedImages.length - 1];
+    previewCanvas.width = canvas.width;
+    previewCanvas.height = canvas.height;
+    const pctx = previewCanvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => pctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    img.src = dataURL;
+
+    if (capturedImages.length < 3) {
+      setTimeout(startCountdown, 700);
+    } else {
+      localStorage.setItem('capturedImages', JSON.stringify(capturedImages));
+    }
+  }
+
+  function resetAll() {
+    capturedImages = [];
+    previews.forEach(p => {
+      const ctx = p.getContext('2d');
+      ctx.clearRect(0, 0, p.width, p.height);
+    });
+    countdownEl.textContent = '';
+  }
+
+  function goToReview() {
+    if (capturedImages.length === 3) {
+      localStorage.setItem('capturedImages', JSON.stringify(capturedImages));
+      window.location.href = 'review.html';
+    } else {
+      alert("📷 Bạn cần chụp đủ 3 ảnh trước khi xem lại.");
+    }
+  }
+</script>
+
+</body>
+<footer class="footer">
+  <p>✨ Web PhotoBooth được thiết kế bởi <strong>Quang Khải</strong>. Đây là dự án giúp bạn chụp ảnh nhanh với hiệu ứng, sticker và giao diện thân thiện như photobooth thật.</p>
+  <p>Web vẫn đang trong quá trình phát triển nên sẽ có nhiều những hiệu ứng, sticker và chức năng mới trong tương lai</p>
+  <p>📍 Mọi ý tưởng và phản hồi xin gửi về <a href="mailto:ngkhai983@gmail.com">ngkhai983@gmail.com</a></p>
+</footer>
+</html>

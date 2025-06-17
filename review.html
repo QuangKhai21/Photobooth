@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Photobooth Review</title>
+  <style>
+    body {
+      font-family: 'Arial';
+      background: #f0f0f0;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .layout {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+    }
+
+    .photobooth-frame {
+      background-color: pink; /* mặc định là hồng */
+      width: 300px;
+      padding: 10px;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      position: relative;
+    }
+
+    .photo-slot {
+      background-color: white;
+      padding: 5px;
+      width: 260px;
+      height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .photo-slot img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 4px;
+    }
+
+    .sticker {
+      position: absolute;
+      font-size: 24px;
+      top: 5px;
+      left: 5px;
+      pointer-events: none;
+    }
+
+    .footer-text {
+      font-weight: bold;
+      margin-top: 5px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    button, select {
+      padding: 10px 15px;
+      border: none;
+      background: #333;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #555;
+    }
+       .branding {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #007bff;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+.footer {
+  margin-top: 1rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #555;
+  background-color: #eaf4ff;
+  border-top: 2px solid #ccc;
+  border-radius: 8px;
+  max-width: 1400px;
+  width: 100%;
+}
+
+.footer a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+  </style>
+</head>
+<body>
+    <div class="branding">Quang Khải💻</div>
+  <h1>Chỉnh Sửa Ảnh Photobooth</h1>
+
+  <div class="layout">
+    <!-- BÊN TRÁI: CONTROL -->
+    <div class="controls">
+      <label for="frameColor">Màu khung viền:</label>
+      <select id="frameColor" onchange="changeFrameColor()">
+        <option value="pink">Hồng</option>
+        <option value="white">Trắng</option>
+        <option value="yellow">Vàng</option>
+        <option value="black">Đen</option>
+        <option value="#90e0ef">Xanh biển</option>
+      </select>
+
+      <label for="stickerSelect">Chọn sticker:</label>
+      <select id="stickerSelect" onchange="addStickers()">
+        <option value="">Không</option>
+        <option value="🎉">🎉</option>
+        <option value="😎">😎</option>
+        <option value="❤️">❤️</option>
+        <option value="⭐">⭐</option>
+        <option value="🇻🇳">🇻🇳</option>
+      </select>
+
+      <button onclick="downloadImage()">Tải về</button>
+      <button onclick="goBack()">Chụp lại</button>
+    </div>
+
+    <!-- BÊN PHẢI: FRAME -->
+    <div class="photobooth-frame" id="photoboothFrame">
+      <div class="photo-slot"><img id="img1"><div class="sticker" id="sticker1"></div></div>
+      <div class="photo-slot"><img id="img2"><div class="sticker" id="sticker2"></div></div>
+      <div class="photo-slot"><img id="img3"><div class="sticker" id="sticker3"></div></div>
+      <div class="footer-text">DEV PAN<br><span id="date"></span></div>
+    </div>
+  </div>
+
+  <canvas id="finalCanvas" style="display:none;"></canvas>
+
+  <!-- Script xử lý -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    const images = JSON.parse(localStorage.getItem('capturedImages')) || [];
+
+    if (images.length >= 3) {
+      document.getElementById('img1').src = images[0];
+      document.getElementById('img2').src = images[1];
+      document.getElementById('img3').src = images[2];
+    }
+
+    document.getElementById('date').innerText = new Date().toISOString().split('T')[0];
+
+    function addStickers() {
+      const value = document.getElementById('stickerSelect').value;
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById(`sticker${i}`).innerText = value;
+      }
+    }
+
+    function changeFrameColor() {
+      const color = document.getElementById('frameColor').value;
+      document.getElementById('photoboothFrame').style.backgroundColor = color;
+    }
+
+    function downloadImage() {
+  const confirmDownload = confirm("Bạn có chắc muốn tải về?\nNhấn OK để tải ảnh hoặc Cancel để tiếp tục chỉnh sửa.");
+  if (!confirmDownload) return;
+
+  const container = document.getElementById('photoboothFrame');
+  html2canvas(container).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'photobooth.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+
+
+    function goBack() {
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+<footer class="footer">
+  <p>✨ Web PhotoBooth được thiết kế bởi <strong>Quang Khải</strong>. Đây là dự án giúp bạn chụp ảnh nhanh với hiệu ứng, sticker và giao diện thân thiện như photobooth thật.</p>
+  <p>Web vẫn đang trong quá trình phát triển nên sẽ có nhiều những hiệu ứng, sticker và chức năng mới trong tương lai</p>
+  <p>📍 Mọi ý tưởng và phản hồi xin gửi về <a href="mailto:ngkhai983@gmail.com">ngkhai983@gmail.com</a></p>
+</footer>
+
+</html>
